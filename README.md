@@ -19,7 +19,7 @@ You register a business. The system runs 3 AI agents in sequence:
 ### Option A — One-command setup script
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/Faizi1/ai_visibility_api.git
 cd ai_visibility_api
 bash setup.sh
 ```
