@@ -1,0 +1,549 @@
+{
+  "info": {
+    "name": "AI Visibility Intelligence API",
+    "description": "Complete Postman collection for testing the AI Visibility Intelligence API.\n\nHow to use:\n1. Import this file into Postman\n2. Set the 'base_url' variable to http://localhost:5000\n3. Run requests in order: Create Profile → Run Pipeline → View Results\n4. The collection auto-saves profile_uuid and query_uuid from responses",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "profile_uuid",
+      "value": "",
+      "type": "string",
+      "description": "Auto-filled after Create Profile request"
+    },
+    {
+      "key": "query_uuid",
+      "value": "",
+      "type": "string",
+      "description": "Auto-filled after List Queries request"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Profiles",
+      "description": "Business profile management endpoints",
+      "item": [
+        {
+          "name": "1.1 Create Profile (Frase)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auto-save profile_uuid for all future requests",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('profile_uuid', body.profile_uuid);",
+                  "    console.log('Saved profile_uuid:', body.profile_uuid);",
+                  "}",
+                  "",
+                  "pm.test('Status is 201 Created', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has profile_uuid', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('profile_uuid');",
+                  "});",
+                  "pm.test('Status is created', () => {",
+                  "    pm.expect(pm.response.json().status).to.eql('created');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Frase\",\n  \"domain\": \"frase.io\",\n  \"industry\": \"SEO Content Tools\",\n  \"description\": \"AI-powered content briefs and SEO research tool\",\n  \"competitors\": [\"surferseo.com\", \"marketmuse.com\", \"clearscope.io\"]\n}"
+            },
+            "url": "{{base_url}}/api/v1/profiles",
+            "description": "Register a new business profile. The profile_uuid is auto-saved to collection variables."
+          }
+        },
+        {
+          "name": "1.2 Create Profile (Surfer SEO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('profile_uuid', body.profile_uuid);",
+                  "    console.log('Saved profile_uuid:', body.profile_uuid);",
+                  "}",
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Surfer SEO\",\n  \"domain\": \"surferseo.com\",\n  \"industry\": \"SEO Software\",\n  \"description\": \"AI-powered SEO content optimization tool\",\n  \"competitors\": [\"clearscope.io\", \"marketmuse.com\", \"frase.io\"]\n}"
+            },
+            "url": "{{base_url}}/api/v1/profiles",
+            "description": "Alternative profile — use this if Frase is already registered."
+          }
+        },
+        {
+          "name": "1.3 Create Profile — Validation Error (missing fields)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Response has validation_error', () => {",
+                  "    pm.expect(pm.response.json().error).to.eql('validation_error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Incomplete Profile\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/profiles",
+            "description": "Should return 400 with missing_fields list."
+          }
+        },
+        {
+          "name": "1.4 Create Profile — Duplicate Domain (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409 Conflict', () => {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test('Error is conflict', () => {",
+                  "    pm.expect(pm.response.json().error).to.eql('conflict');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Frase Again\",\n  \"domain\": \"frase.io\",\n  \"industry\": \"SEO Content Tools\"\n}"
+            },
+            "url": "{{base_url}}/api/v1/profiles",
+            "description": "Re-registering the same domain returns 409."
+          }
+        },
+        {
+          "name": "1.5 Get Profile by UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has stats block', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('stats');",
+                  "});",
+                  "pm.test('Has total_queries_discovered', () => {",
+                  "    pm.expect(pm.response.json().stats).to.have.property('total_queries_discovered');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}",
+            "description": "Fetch profile with summary stats (total queries, avg opportunity score)."
+          }
+        },
+        {
+          "name": "1.6 Get Profile — Not Found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/profiles/fake-uuid-that-does-not-exist",
+            "description": "Should return 404 with not_found error."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Pipeline",
+      "description": "Trigger the 3-agent AI pipeline. Takes 15-45 seconds.",
+      "item": [
+        {
+          "name": "2.1 Run Pipeline ⚡ (15-45 sec)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Pipeline completed', () => {",
+                  "    pm.expect(pm.response.json().status).to.eql('completed');",
+                  "});",
+                  "pm.test('Has run_uuid', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('run_uuid');",
+                  "});",
+                  "pm.test('Queries were discovered', () => {",
+                  "    pm.expect(pm.response.json().queries_discovered).to.be.above(0);",
+                  "});",
+                  "pm.test('Top opportunity queries present', () => {",
+                  "    pm.expect(pm.response.json().top_opportunity_queries).to.be.an('array');",
+                  "});",
+                  "pm.test('Recommendations present', () => {",
+                  "    pm.expect(pm.response.json().content_recommendations).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Save first query_uuid for recheck test",
+                  "const queries = pm.response.json().top_opportunity_queries;",
+                  "if (queries && queries.length > 0) {",
+                  "    pm.collectionVariables.set('query_uuid', queries[0].query_uuid);",
+                  "    console.log('Saved query_uuid:', queries[0].query_uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/run",
+            "description": "⚡ Triggers the full 3-agent pipeline.\n\nAgent 1 → discovers 10-20 queries\nAgent 2 → scores each query (visibility + opportunity)\nAgent 3 → generates content recommendations\n\nThis will take 15-45 seconds. Do not cancel.\nRate limited to 5 runs per hour."
+          }
+        },
+        {
+          "name": "2.2 Run Pipeline — Profile Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/profiles/invalid-uuid/run",
+            "description": "Should return 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Queries",
+      "description": "Browse and filter discovered queries",
+      "item": [
+        {
+          "name": "3.1 List All Queries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has queries array', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('queries');",
+                  "});",
+                  "pm.test('Has pagination', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('pagination');",
+                  "});",
+                  "",
+                  "// Save first query uuid for recheck",
+                  "const queries = pm.response.json().queries;",
+                  "if (queries && queries.length > 0) {",
+                  "    pm.collectionVariables.set('query_uuid', queries[0].query_uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries",
+            "description": "Returns all queries sorted by opportunity score descending."
+          }
+        },
+        {
+          "name": "3.2 Filter — High Opportunity (min_score=0.6)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('All scores above 0.6', () => {",
+                  "    const queries = pm.response.json().queries;",
+                  "    queries.forEach(q => {",
+                  "        pm.expect(q.opportunity_score).to.be.at.least(0.6);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?min_score=0.6",
+              "query": [{ "key": "min_score", "value": "0.6" }]
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?min_score=0.6",
+            "description": "Returns only queries with opportunity score >= 0.6"
+          }
+        },
+        {
+          "name": "3.3 Filter — Not Visible Queries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('All queries are not_visible', () => {",
+                  "    const queries = pm.response.json().queries;",
+                  "    queries.forEach(q => {",
+                  "        pm.expect(q.visibility_status).to.eql('not_visible');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=not_visible",
+              "query": [{ "key": "status", "value": "not_visible" }]
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=not_visible",
+            "description": "Queries where the domain does NOT appear in AI answers."
+          }
+        },
+        {
+          "name": "3.4 Filter — Visible Queries",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=visible",
+              "query": [{ "key": "status", "value": "visible" }]
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=visible",
+            "description": "Queries where the domain already appears in AI answers."
+          }
+        },
+        {
+          "name": "3.5 Filter — Combined (not_visible + min_score)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=not_visible&min_score=0.5",
+              "query": [
+                { "key": "status", "value": "not_visible" },
+                { "key": "min_score", "value": "0.5" }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?status=not_visible&min_score=0.5",
+            "description": "The most actionable queries — not visible AND high opportunity."
+          }
+        },
+        {
+          "name": "3.6 Pagination — Page 2",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?page=1&per_page=5",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            },
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/queries?page=1&per_page=5",
+            "description": "Paginated results — 5 per page."
+          }
+        },
+        {
+          "name": "3.7 Recheck Single Query (re-run Agent 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has updated query', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('query');",
+                  "});",
+                  "pm.test('Has tokens_used', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('tokens_used');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/queries/{{query_uuid}}/recheck",
+            "description": "Re-runs Agent 2 on a single query. Use this after publishing content to check if visibility improved."
+          }
+        },
+        {
+          "name": "3.8 Recheck — Invalid UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/queries/fake-query-uuid/recheck",
+            "description": "Should return 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Recommendations",
+      "description": "Content recommendations generated by Agent 3",
+      "item": [
+        {
+          "name": "4.1 List All Recommendations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has recommendations array', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('recommendations');",
+                  "});",
+                  "pm.test('Has total count', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('total');",
+                  "});",
+                  "",
+                  "// Check recommendation structure",
+                  "const recs = pm.response.json().recommendations;",
+                  "if (recs.length > 0) {",
+                  "    const r = recs[0];",
+                  "    pm.test('Recommendation has required fields', () => {",
+                  "        pm.expect(r).to.have.property('recommendation_uuid');",
+                  "        pm.expect(r).to.have.property('content_type');",
+                  "        pm.expect(r).to.have.property('title');",
+                  "        pm.expect(r).to.have.property('rationale');",
+                  "        pm.expect(r).to.have.property('target_keywords');",
+                  "        pm.expect(r).to.have.property('priority');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/profiles/{{profile_uuid}}/recommendations",
+            "description": "Returns all content recommendations for the profile, most recent first."
+          }
+        },
+        {
+          "name": "4.2 Recommendations — Profile Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/profiles/non-existent-uuid/recommendations",
+            "description": "Should return 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Health Check",
+      "item": [
+        {
+          "name": "5.1 Server Running Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Server is reachable', () => {",
+                  "    pm.response.to.have.status(404); // Flask returns 404 for unknown routes, that's fine",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/",
+            "description": "Just checks the server is running."
+          }
+        }
+      ]
+    }
+  ]
+}

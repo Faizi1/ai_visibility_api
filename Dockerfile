@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Set FLASK_APP so flask db commands work
+ENV FLASK_APP=run.py
+
+EXPOSE 5000
+
+CMD ["python", "run.py"]
